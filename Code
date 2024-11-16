@@ -43,3 +43,115 @@ public class BankAccountHelperTest {
         System.assertEquals(false, BankAccountHelper.validateInitialDeposit(null), 'Test Case 4 Failed: Null account object should return false.');
     }
 }
+//AccountValidationTrigger
+trigger AccountValidationTrigger on Bank_Account__c (before insert) {
+    for (Bank_Account__c account : Trigger.new) {
+        if (!BankAccountHelper.validateInitialDeposit(account)) {
+            account.addError('Initial Deposit must be at least $500.');
+        }
+    }
+}
+//AccountValidationTriggerTest
+@isTest
+public class AccountValidationTriggerTest {
+    @isTest
+    static void testValidInitialDeposit() {
+        Bank_Account__c validAccount = new Bank_Account__c();
+        validAccount.Initial_Deposit__c = 600;
+
+        Test.startTest();
+        insert validAccount;
+        Test.stopTest();
+
+        // Verify no errors
+        System.assertEquals(600, [SELECT Initial_Deposit__c FROM Bank_Account__c WHERE Id = :validAccount.Id].Initial_Deposit__c);
+    }
+
+    @isTest
+    static void testInvalidInitialDeposit() {
+        Bank_Account__c invalidAccount = new Bank_Account__c();
+        invalidAccount.Initial_Deposit__c = 400;
+
+        Test.startTest();
+        Database.SaveResult result = Database.insert(invalidAccount, false);
+        Test.stopTest();
+
+        // Verify the error
+        System.assertEquals(false, result.isSuccess());
+        System.assertEquals('Initial Deposit must be at least $500.', result.getErrors()[0].getMessage());
+    }
+
+    @isTest
+    static void testNullInitialDeposit() {
+        Bank_Account__c nullDepositAccount = new Bank_Account__c();
+        nullDepositAccount.Initial_Deposit__c = null;
+
+        Test.startTest();
+        Database.SaveResult result = Database.insert(nullDepositAccount, false);
+        Test.stopTest();
+
+        // Verify the error
+        System.assertEquals(false, result.isSuccess());
+        System.assertEquals('Initial Deposit must be at least $500.', result.getErrors()[0].getMessage());
+    }
+}
+//LoanInterestCalculator
+public class LoanInterestCalculator {
+    
+    // Method to calculate interest based on principal, interest rate, and duration (in years)
+    public static Decimal calculateInterest(Decimal principal, Decimal interestRate, Integer timePeriodInYears) {
+        Decimal interest = (principal * interestRate * timePeriodInYears) / 100;
+        return interest;
+    }
+    
+    // Method to calculate monthly installment based on total loan and time in months
+    public static Decimal calculateMonthlyInstallment(Decimal totalLoanAmount, Integer timePeriodInMonths) {
+        if (timePeriodInMonths > 0) {
+            return totalLoanAmount / timePeriodInMonths;
+        }
+        return 0;
+    }
+}
+//LoanInterestCalculatorTest
+@IsTest
+public class LoanInterestCalculatorTest {
+
+    @IsTest
+    static void testCalculateInterest() {
+        // Test data
+        Decimal principal = 10000;
+        Decimal rate = 5;
+        Integer timePeriodInYears = 2; // 2 years
+
+        // Expected interest (simple interest formula)
+        Decimal expectedInterest = (principal * rate * timePeriodInYears) / 100;
+
+        // Call the method and compare results
+        Decimal result = LoanInterestCalculator.calculateInterest(principal, rate, timePeriodInYears);
+        System.assertEquals(expectedInterest, result, 'Interest calculation is incorrect');
+    }
+
+    @IsTest
+    static void testCalculateMonthlyInstallment() {
+        // Test data
+        Decimal totalLoanAmount = 12000;
+        Integer timePeriodInMonths = 12;
+
+        // Expected installment
+        Decimal expectedInstallment = totalLoanAmount / timePeriodInMonths;
+
+        // Call the method and compare results
+        Decimal result = LoanInterestCalculator.calculateMonthlyInstallment(totalLoanAmount, timePeriodInMonths);
+        System.assertEquals(expectedInstallment, result, 'Monthly installment calculation is incorrect');
+    }
+}
+//LoanApprovalTrigger
+trigger LoanApprovalTrigger on Loan__c (before insert, before update) {
+    for (Loan__c loan : Trigger.new) {
+        if (loan.Loan_Amount__c > 50000) {
+            loan.Status__c = 'Pending Approval';
+        } else {
+            loan.Status__c = 'Approved';
+        }
+    }
+}
