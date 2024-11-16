@@ -1,0 +1,45 @@
+// BankAccountHelper
+public class BankAccountHelper {
+    public static Boolean validateInitialDeposit(Bank_Account__c account) {
+        // Null check for the account object
+        if (account == null) {
+            System.debug('Error: Account object is null.');
+            return false;
+        }
+        // Null check for the Initial_Deposit__c field
+        if (account.Initial_Deposit__c == null) {
+            System.debug('Error: Initial deposit is null.');
+            return false;
+        }
+        // Validate the deposit amount
+        if (account.Initial_Deposit__c < 500) {
+            System.debug('Error: Initial deposit is below the minimum threshold of 500.');
+            return false;
+        }
+        return true;
+    }
+}
+//BankAccountHelperTest
+@isTest
+public class BankAccountHelperTest {
+    @isTest
+    static void testValidateInitialDeposit() {
+        // Test Case 1: Valid initial deposit
+        Bank_Account__c validAccount = new Bank_Account__c();
+        validAccount.Initial_Deposit__c = 600;
+        System.assertEquals(true, BankAccountHelper.validateInitialDeposit(validAccount), 'Test Case 1 Failed: Valid deposit should return true.');
+
+        // Test Case 2: Null deposit value
+        Bank_Account__c nullDepositAccount = new Bank_Account__c();
+        nullDepositAccount.Initial_Deposit__c = null;
+        System.assertEquals(false, BankAccountHelper.validateInitialDeposit(nullDepositAccount), 'Test Case 2 Failed: Null deposit should return false.');
+
+        // Test Case 3: Deposit below the minimum threshold
+        Bank_Account__c lowDepositAccount = new Bank_Account__c();
+        lowDepositAccount.Initial_Deposit__c = 400;
+        System.assertEquals(false, BankAccountHelper.validateInitialDeposit(lowDepositAccount), 'Test Case 3 Failed: Deposit below 500 should return false.');
+
+        // Test Case 4: Null account object
+        System.assertEquals(false, BankAccountHelper.validateInitialDeposit(null), 'Test Case 4 Failed: Null account object should return false.');
+    }
+}
